@@ -1,0 +1,69 @@
+version: "3"
+
+networks:
+  default:
+    driver: bridge
+
+services:
+  kafka:
+    image: docker.io/bitnami/kafka:3.7
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    volumes:
+      - "kafka_data:/bitnami"
+    networks:
+      - default
+    environment:
+      # KRaft settings
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      # Listeners
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+
+  database:
+    image: postgres
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - default
+    environment:
+      POSTGRES_DB: "default"
+      POSTGRES_USER: "default"
+      POSTGRES_PASSWORD: "default"
+
+  receiver:
+    build:
+      context: .
+      dockerfile: ./deploy/receiver.Dockerfile
+    restart: always
+    container_name: receiver
+    depends_on:
+      - database
+      - kafka
+    ports:
+      - "8080:8080"
+    networks:
+      - default
+
+  handler:
+    build:
+      context: .
+      dockerfile: ./deploy/handler.Dockerfile
+    restart: always
+    container_name: handler
+    depends_on:
+      - database
+      - kafka
+    networks:
+      - default
+
+volumes:
+  kafka_data:
+    driver: local

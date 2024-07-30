@@ -1,0 +1,15 @@
+receiver: {
+  socket: ":8080"
+}
+broker: {
+  socket: "kafka:9092",
+  topic: "messages",
+  group: "messages-group"
+}
+db: {
+  host: "postgres",
+  port: 5432,
+  db: "default",
+  user: "default",
+  password: "default"
+}
